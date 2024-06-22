@@ -61,32 +61,78 @@ exports.getHome = (req, res, next) => {
   });
 };
 
-exports.getSearch = (req, res, next) => {
-  const token = req.cookies.token;
-  let isLoggedIn;
-  console.log(token);
-  if (!token) {
-    isLoggedIn = false;
-    const search = req.session.search || [];
-    res.render("shop/search", {
-      pageTitle: "search",
-      search: search,
-      isAuthenticated: isLoggedIn,
-    });
-  }
-  jwt.verify(token, "your_secret_key", (err, decodedToken) => {
-    if (err) {
-      return (isLoggedIn = false);
+exports.getSearch = async (req, res, next) => {
+  try {
+    const token = req.cookies.token;
+    const color = req.query.color;
+    const category = req.query.category;
+    let search = [];
+
+    // Helper function to find products by color
+    const findByColor = async (color) => {
+      return await Product.find({
+        $or: [
+          { firstColor: { $regex: new RegExp(color, "i") } },
+          { secondColor: { $regex: new RegExp(color, "i") } },
+        ],
+      });
+    };
+
+    // Helper function to find products by size range
+    const findByCategory = async (sizeFrom, sizeTo) => {
+      return await Product.find({
+        $or: [
+          { sizeFrom: { $gte: sizeFrom, $lte: sizeTo } },
+          { sizeTo: { $gte: sizeFrom, $lte: sizeTo } },
+        ],
+      });
+    };
+
+    // If no token, search for products without authentication
+    if (!token) {
+      if (color) {
+        search = await findByColor(color);
+      } else if (category) {
+        if (category === "men") {
+          search = await findByCategory(40, 45);
+        } else if (category === "women") {
+          search = await findByCategory(34, 40);
+        } else if (category === "kids") {
+          search = await findByCategory(24, 34);
+        }
+      }
+
+      return res.render("shop/search", {
+        pageTitle: "Search",
+        search,
+        isAuthenticated: false,
+      });
     }
-    console.log(decodedToken);
-    isLoggedIn = true;
-    const search = req.session.search || [];
+
+    // Verify token and search for products with authentication
+    const decodedToken = await jwt.verify(token, "your_secret_key");
+
+    if (color) {
+      search = await findByColor(color);
+    } else if (category) {
+      if (category === "men") {
+        search = await findByCategory(40, 45);
+      } else if (category === "women") {
+        search = await findByCategory(34, 40);
+      } else if (category === "kids") {
+        search = await findByCategory(24, 34);
+      }
+    }
+
     res.render("shop/search", {
-      pageTitle: "search",
-      search: search,
-      isAuthenticated: isLoggedIn,
+      pageTitle: "Search",
+      search,
+      isAuthenticated: true,
     });
-  });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 };
 
 exports.postSearch = async (req, res, next) => {
@@ -107,8 +153,6 @@ exports.postSearch = async (req, res, next) => {
   res.redirect("/search");
 };
 
-
-
 // exports.getFilter = async (req, res, next) => {
 //   const category = req.query.category || 'all';
 //   let products;
@@ -122,32 +166,61 @@ exports.postSearch = async (req, res, next) => {
 //   res.json(products);
 // };
 
+const getColorCounts = async () => {
+  const colorCounts = await Product.aggregate([
+    { $group: { _id: "$firstColor", count: { $sum: 1 } } },
+  ]);
+  const countsMap = {};
+  colorCounts.forEach((color) => {
+    countsMap[color._id] = color.count;
+  });
+  return countsMap;
+};
 
+// Helper function to get category counts
+const getCategoryCounts = async () => {
+  const menCount = await Product.countDocuments({
+    $or: [
+      { sizeFrom: { $gte: 40, $lte: 45 } },
+      { sizeTo: { $gte: 40, $lte: 45 } },
+    ],
+  });
 
+  const womenCount = await Product.countDocuments({
+    $or: [
+      { sizeFrom: { $gte: 34, $lte: 40 } },
+      { sizeTo: { $gte: 34, $lte: 40 } },
+    ],
+  });
+
+  const kidsCount = await Product.countDocuments({
+    $or: [
+      { sizeFrom: { $gte: 24, $lte: 34 } },
+      { sizeTo: { $gte: 24, $lte: 34 } },
+    ],
+  });
+
+  return { men: menCount, women: womenCount, kids: kidsCount };
+};
 
 exports.getProducts = async (req, res, next) => {
-  const token = req.cookies.token;
-  let isLoggedIn;
-  console.log(token);
-  if (!token) {
-    isLoggedIn = false;
+  try {
+    const token = req.cookies.token;
+    let isLoggedIn;
+    console.log("Token:", token);
+
     const page = parseInt(req.query.page) || 1;
     const perPage = 15;
-    const categoryCounts = await Product.aggregate([
-        { $group: { _id: "$category", count: { $sum: 1 } } }
-      ]);
+    const colorCounts = await getColorCounts();
+    const categoryCounts = await getCategoryCounts();
 
-      const countsMap = {};
-      categoryCounts.forEach(cat => {
-        countsMap[cat._id] = cat.count;
-      });
-    try {
-      const totalProducts = await Product.countDocuments();
-      const products = await Product.find()
-        .skip((page - 1) * perPage)
-        .limit(perPage);
+    const totalProducts = await Product.countDocuments();
+    const products = await Product.find()
+      .skip((page - 1) * perPage)
+      .limit(perPage);
 
-      res.render("shop/shop", {
+    const renderPage = () => {
+      return res.render("shop/shop", {
         prods: products,
         pageTitle: "Shop",
         path: "/products",
@@ -158,53 +231,30 @@ exports.getProducts = async (req, res, next) => {
         previousPage: page - 1,
         lastPage: Math.ceil(totalProducts / perPage),
         isAuthenticated: isLoggedIn,
-        categoryCounts: countsMap
+        colorCounts,
+        categoryCounts,
       });
-    } catch (err) {
-      console.log(err);
-      res.status(500).json({ message: "Internal Server Error" });
+    };
+
+    if (!token) {
+      isLoggedIn = false;
+      return renderPage();
     }
+
+    jwt.verify(token, "your_secret_key", (err, decodedToken) => {
+      if (err) {
+        console.log("JWT Verification Error:", err);
+        isLoggedIn = false;
+      } else {
+        console.log("Decoded Token:", decodedToken);
+        isLoggedIn = true;
+      }
+      renderPage();
+    });
+  } catch (err) {
+    console.log("Error:", err);
+    res.status(500).json({ message: "Internal Server Error" });
   }
-  jwt.verify(token, "your_secret_key", async (err, decodedToken) => {
-    if (err) {
-      return (isLoggedIn = false);
-    }
-    console.log(decodedToken);
-    isLoggedIn = true;
-    const page = parseInt(req.query.page) || 1;
-    const perPage = 15;
-    const categoryCounts = await Product.aggregate([
-        { $group: { _id: "$category", count: { $sum: 1 } } }
-      ]);
-
-      const countsMap = {};
-      categoryCounts.forEach(cat => {
-        countsMap[cat._id] = cat.count;
-      });
-    try {
-      const totalProducts = await Product.countDocuments();
-      const products = await Product.find()
-        .skip((page - 1) * perPage)
-        .limit(perPage);
-
-      res.render("shop/shop", {
-        prods: products,
-        pageTitle: "Shop",
-        path: "/products",
-        currentPage: page,
-        hasNextPage: perPage * page < totalProducts,
-        hasPreviousPage: page > 1,
-        nextPage: page + 1,
-        previousPage: page - 1,
-        lastPage: Math.ceil(totalProducts / perPage),
-        isAuthenticated: isLoggedIn,
-        categoryCounts: countsMap
-      });
-    } catch (err) {
-      console.log(err);
-      res.status(500).json({ message: "Internal Server Error" });
-    }
-  });
 };
 
 exports.getProduct = (req, res, next) => {
@@ -499,13 +549,17 @@ exports.postOrder = async (req, res, next) => {
       <p>Thank you for your purchase! Here are your order details:</p>
       <ul id="order-list">
         ${products
-                        .map(
-                          (product) =>
-                            `<li>${product.product.title} - ${product.quantity} x $${product.product.price.toFixed(2)}</li>`
-                        )
-                        .join("")}
+          .map(
+            (product) =>
+              `<li>${product.product.title} - ${
+                product.quantity
+              } x $${product.product.price.toFixed(2)}</li>`
+          )
+          .join("")}
       </ul>
-      <p class="total" id="total-price">Total Price: $${totalPrice.toFixed(2)}</p>
+      <p class="total" id="total-price">Total Price: $${totalPrice.toFixed(
+        2
+      )}</p>
     </div>
     <div class="footer">
       <p>&copy; 2024 Your Company. All rights reserved.</p>
@@ -618,7 +672,7 @@ exports.getProfile = async (req, res, next) => {
       gender: user.gender,
       email: user.email,
       phone: user.phoneNumber,
-      isAuthenticated:isAuthenticated,
+      isAuthenticated: isAuthenticated,
     });
   } catch (err) {
     console.log(err);
@@ -723,30 +777,27 @@ exports.postFooterSearch = (req, res, next) => {
   res.redirect("/");
 };
 
-
-
-
 exports.getFilter = async (req, res, next) => {
   const token = req.cookies.token;
   let isLoggedIn;
-  const category = req.query.category || 'all'; // Extract the category from the query parameters
+  const category = req.query.category || "all"; // Extract the category from the query parameters
 
   console.log(token);
   if (!token) {
     isLoggedIn = false;
     const page = parseInt(req.query.page) || 1;
     const perPage = 15;
-    const categoryCounts = await Product.aggregate([
-        { $group: { _id: "$category", count: { $sum: 1 } } }
-      ]);
+    const colorCounts = await Product.aggregate([
+      { $group: { _id: "$firstColor", count: { $sum: 1 } } },
+    ]);
 
-      const countsMap = {};
-      categoryCounts.forEach(cat => {
-        countsMap[cat._id] = cat.count;
-      });
+    const countsMap = {};
+    colorCounts.forEach((color) => {
+      countsMap[color._id] = color.count;
+    });
     try {
       let products;
-      if (category === 'all') {
+      if (category === "all") {
         products = await Product.find()
           .skip((page - 1) * perPage)
           .limit(perPage);
@@ -768,7 +819,7 @@ exports.getFilter = async (req, res, next) => {
         previousPage: page - 1,
         lastPage: Math.ceil(totalProducts / perPage),
         isAuthenticated: isLoggedIn,
-        categoryCounts: countsMap
+        categoryCounts: countsMap,
       });
     } catch (err) {
       console.log(err);
@@ -783,18 +834,18 @@ exports.getFilter = async (req, res, next) => {
     isLoggedIn = true;
     const page = parseInt(req.query.page) || 1;
     const perPage = 15;
-    const categoryCounts = await Product.aggregate([
-        { $group: { _id: "$category", count: { $sum: 1 } } }
+    const colorCounts = await Product.aggregate([
+      { $group: { _id: "$firstColor", count: { $sum: 1 } } },
     ]);
 
     const countsMap = {};
-      categoryCounts.forEach(cat => {
-      countsMap[cat._id] = cat.count;
+    colorCounts.forEach((color) => {
+      countsMap[color._id] = color.count;
     });
     try {
       let products;
       const totalProducts = await Product.countDocuments();
-      if (category === 'all') {
+      if (category === "all") {
         products = await Product.find()
           .skip((page - 1) * perPage)
           .limit(perPage);
@@ -815,8 +866,7 @@ exports.getFilter = async (req, res, next) => {
         previousPage: page - 1,
         lastPage: Math.ceil(totalProducts / perPage),
         isAuthenticated: isLoggedIn,
-        categoryCounts: countsMap
-
+        colorCounts: countsMap,
       });
     } catch (err) {
       console.log(err);
@@ -826,48 +876,50 @@ exports.getFilter = async (req, res, next) => {
 };
 
 exports.postIncreaseCart = async (req, res, next) => {
-    const productId = req.body.prodId; 
+  const productId = req.body.prodId;
   let token = req.cookies.token;
-  console.log('Request Body:', req.body);
-    console.log('Product ID:', productId);
-        jwt.verify(token, "your_secret_key", async (err, decodedToken) => {
-        if (err) {
-          return res.redirect('/cart');
-          console.error(err)
-        }
+  console.log("Request Body:", req.body);
+  console.log("Product ID:", productId);
+  jwt.verify(token, "your_secret_key", async (err, decodedToken) => {
+    if (err) {
+      return res.redirect("/cart");
+      console.error(err);
+    }
 
-        try {
-            const user = await User.findById(decodedToken.userId);
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
-            await user.increaseQuantityInCart(productId);
-            return res.redirect('/cart');
-        } catch (err) {
-            console.log(err);
-            return res.status(500).json({ msg: 'Server error' });
-        }
-    });
+    try {
+      const user = await User.findById(decodedToken.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      await user.increaseQuantityInCart(productId);
+      return res.redirect("/cart");
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "Server error" });
+    }
+  });
 };
 
 exports.postDecreaseCart = async (req, res, next) => {
-    const productId = req.body.prodId; 
-    let token = req.cookies.token;
-    jwt.verify(token, 'your_secret_key', async (err, decodedToken) => {
-        if (err) {
-            return res.status(401).json({ message: 'Invalid token' });
-        }
+  const productId = req.body.prodId;
+  let token = req.cookies.token;
+  jwt.verify(token, "your_secret_key", async (err, decodedToken) => {
+    if (err) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
 
-        try {
-            const user = await User.findById(decodedToken.userId);
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
-            await user.decreaseQuantityInCart(productId);
-            return res.status(200).json({ message: 'Quantity decreased successfully' });
-        } catch (err) {
-            console.log(err);
-            return res.status(500).json({ msg: 'Server error' });
-        }
-    });
+    try {
+      const user = await User.findById(decodedToken.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      await user.decreaseQuantityInCart(productId);
+      return res
+        .status(200)
+        .json({ message: "Quantity decreased successfully" });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ msg: "Server error" });
+    }
+  });
 };

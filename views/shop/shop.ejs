@@ -117,26 +117,79 @@
             <div class="row g-4 left-section">
               <div class="col-lg-12">
                 <div class="mb-3">
-                  <h4>Categories</h4>
-                  <ul>
+                  <h4>CATEGORIES</h4>
+                  <ul style="list-style-type: none;cursor: pointer;">
                     <li>
                       <div class="d-flex justify-content-between fruite-name">
-                        <a>Men</a>
+                        <a href="/search?category=men">MEN</a>
                         <span style="color:#9ecc48">( <%= categoryCounts['men'] || 0 %> )</span>
                       </div>
                     </li>
                     <li>
                       <div class="d-flex justify-content-between fruite-name">
-                        <a>Women</a>
+                        <a href="/search?category=women">WOMEN</a>
                         <span style="color:#9ecc48">( <%= categoryCounts['women'] || 0 %> )</span>
                       </div>
                     </li>
                     <li>
                       <div class="d-flex justify-content-between fruite-name">
-                        <a>Kids</a>
+                        <a href="/search?category=kids">KIDS</a>
                         <span style="color:#9ecc48">( <%= categoryCounts['kids'] || 0 %> )</span>
                       </div>
                     </li>
+                    
+                  </ul>
+
+                </div>
+
+
+                <div class="mb-3">
+                  <h4>COLORS</h4>
+                  <ul style="list-style-type: none;cursor: pointer;">
+                    
+                    <li>
+                      <div class="d-flex justify-content-between fruite-name">
+                        <a href="/search?color=white"> WHITE</a>
+                        <span style="color:#9ecc48">( <%= colorCounts['white'] || 0 %> )</span>
+                      </div>
+                    </li>
+                    <li>
+                      <div class="d-flex justify-content-between fruite-name">
+                        <a href="/search?color=black">BLACK</a>
+                        <span style="color:#9ecc48">( <%= colorCounts['black'] || 0 %> )</span>
+                      </div>
+                    </li>
+                    <li>
+                      <div class="d-flex justify-content-between fruite-name">
+                        <a href="/search?color=pink">PINK</a>
+                        <span style="color:#9ecc48">( <%= colorCounts['pink'] || 0 %> )</span>
+                      </div>
+                    </li>
+                    <li>
+                      <div class="d-flex justify-content-between fruite-name">
+                        <a href="/search?color=grey">GREY</a>
+                        <span style="color:#9ecc48">( <%= colorCounts['grey'] || 0 %> )</span>
+                      </div>
+                    </li>
+                    <li>
+                      <div class="d-flex justify-content-between fruite-name">
+                        <a href="/search?color=red">RED</a>
+                        <span style="color:#9ecc48">( <%= colorCounts['red'] || 0 %> )</span>
+                      </div>
+                    </li>
+                    <li>
+                      <div class="d-flex justify-content-between fruite-name">
+                        <a href="/search?color=blue">BLUE</a>
+                        <span style="color:#9ecc48">( <%= colorCounts['baby blue'] || 0 %> )</span>
+                      </div>
+                    </li>
+                    <li>
+                      <div class="d-flex justify-content-between fruite-name">
+                        <a href="/search?color=mauve">MAUVE</a>
+                        <span style="color:#9ecc48">( <%= colorCounts['mauve'] || 0 %> )</span>
+                      </div>
+                    </li>
+                    
                   </ul>
 
                 </div>
@@ -258,12 +311,12 @@
 
 
 <script>
-                document.getElementById('categoryForm').addEventListener('submit', function(event) {
-                  const selectedCategory = document.getElementById('categories').value;
-                  const actionUrl = `/filter?category=${selectedCategory}`;
-                  this.action = actionUrl;
-                });
-              </script>
+  document.getElementById('categoryForm').addEventListener('submit', function(event) {
+    const selectedCategory = document.getElementById('categories').value;
+    const actionUrl = `/filter?category=${selectedCategory}`;
+    this.action = actionUrl;
+  });
+</script>
 
   <!-- JavaScript Libraries -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>   

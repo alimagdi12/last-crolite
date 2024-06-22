@@ -1,58 +1,50 @@
-const path = require('path');
+const path = require("path");
 
-const express = require('express');
+const express = require("express");
 
-const shopController = require('../controllers/shop');
-const isAuth = require('../middleware/is-auth');
+const shopController = require("../controllers/shop");
+const isAuth = require("../middleware/is-auth");
 
 const router = express.Router();
 
-router.get('/', shopController.getHome);
+router.get("/", shopController.getHome);
 
-router.get('/search', shopController.getSearch);
+router.get("/search", shopController.getSearch);
 
-router.post('/search',shopController.postSearch)
+router.post("/search", shopController.postSearch);
 
-router.get('/products', shopController.getProducts);
+router.get("/products", shopController.getProducts);
 
-router.get('/contact', shopController.getContact);
+router.get("/contact", shopController.getContact);
 
-router.post('/contact', shopController.postContact);
+router.post("/contact", shopController.postContact);
 
-router.get('/about', shopController.getAbout);
+router.get("/about", shopController.getAbout);
 
-router.post('/footerSearch',shopController.postFooterSearch)
+router.post("/footerSearch", shopController.postFooterSearch);
 
-router.get('/products/:productId', shopController.getProduct);
+router.get("/products/:productId", shopController.getProduct);
 
-router.get('/cart', isAuth, shopController.getCart);
+router.get("/cart", isAuth, shopController.getCart);
 
-router.post('/cart', isAuth, shopController.postCart);
+router.post("/cart", isAuth, shopController.postCart);
 
-router.post('/cart-delete-item', isAuth, shopController.postCartDeleteProduct);
+router.post("/cart-delete-item", isAuth, shopController.postCartDeleteProduct);
 
-router.post('/create-order', isAuth, shopController.postOrder);
+router.post("/create-order", isAuth, shopController.postOrder);
 
-router.get('/orders', isAuth, shopController.getOrders);
+router.get("/orders", isAuth, shopController.getOrders);
 
 // router.post('/payement', isAuth, shopController.postPayement);
 
-router.get('/profile',isAuth,shopController.getProfile);
+router.get("/profile", isAuth, shopController.getProfile);
 
-router.post('/updateUser',isAuth,shopController.postUpdateUser);
+router.post("/updateUser", isAuth, shopController.postUpdateUser);
 
-router.get('/filter', shopController.getFilter);
+router.get("/filter", shopController.getFilter);
 
+router.post("/cart-add-quantity", isAuth, shopController.postIncreaseCart);
 
-router.post('/cart-add-quantity',
-isAuth,
-shopController.postIncreaseCart
-)
-
-
-router.post('/cart-decrease-quantity',
-isAuth,
-shopController.postDecreaseCart
-)
+router.post("/cart-decrease-quantity", isAuth, shopController.postDecreaseCart);
 
 module.exports = router;
