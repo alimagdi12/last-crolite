@@ -923,3 +923,84 @@ exports.postDecreaseCart = async (req, res, next) => {
     }
   });
 };
+
+exports.postNewSearch = async (req, res, next) => {
+  try {
+    const token = req.cookies.token;
+    const { searchInput, color, category } = req.body;
+    let isAuthenticated = false;
+    let search = []; // Initialize search as an empty array
+
+    if (!token) {
+      search = await performSearch({ searchInput, color, category });
+      return res.render("shop/search", {
+        pageTitle: "Products",
+        isAuthenticated,
+        search,
+      });
+    }
+
+    jwt.verify(token, "your_secret_key", async (err, decodedToken) => {
+      if (err) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+      const user = await User.findById(decodedToken.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      isAuthenticated = true; // Update isAuthenticated if token is valid
+
+      search = await performSearch({ searchInput, color, category });
+
+      return res.render("shop/search", {
+        pageTitle: "Products",
+        isAuthenticated,
+        search,
+      });
+    });
+  } catch (error) {
+    console.log(error.message);
+    next(error); // Pass the error to the next middleware
+  }
+};
+
+// Helper function to perform the search based on the criteria
+const performSearch = async ({ searchInput, color, category }) => {
+  const query = {};
+
+  // Add category filter
+  if (category) {
+    let sizeFrom, sizeTo;
+    if (category === "men") {
+      sizeFrom = 40;
+      sizeTo = 45;
+    } else if (category === "women") {
+      sizeFrom = 34;
+      sizeTo = 40;
+    } else if (category === "kids") {
+      sizeFrom = 24;
+      sizeTo = 34;
+    }
+    query.$or = [
+      { sizeFrom: { $gte: sizeFrom, $lte: sizeTo } },
+      { sizeTo: { $gte: sizeFrom, $lte: sizeTo } },
+    ];
+  }
+
+  // Add searchInput filter
+  if (searchInput) {
+    query.title = { $regex: new RegExp(searchInput, "i") };
+  }
+
+  // Add color filter
+  if (color) {
+    query.$or = query.$or || [];
+    query.$or.push(
+      { firstColor: { $regex: new RegExp(color, "i") } },
+      { secondColor: { $regex: new RegExp(color, "i") } }
+    );
+  }
+
+  return await Product.find(query);
+};

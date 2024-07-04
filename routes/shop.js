@@ -47,4 +47,6 @@ router.post("/cart-add-quantity", isAuth, shopController.postIncreaseCart);
 
 router.post("/cart-decrease-quantity", isAuth, shopController.postDecreaseCart);
 
+router.post("/new-search", shopController.postNewSearch);
+
 module.exports = router;
