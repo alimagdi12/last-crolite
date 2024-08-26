@@ -123,8 +123,7 @@
                         class="img-fluid w-100 h-100 bg-secondary rounded"
                         alt="Slide <%= index + 1 %>"
                       />
-                      <div class="carousel-caption">
-                      </div>
+                      <div class="carousel-caption"></div>
                     </div>
                     <% }) %>
 
@@ -364,7 +363,7 @@
                                     </div> -->
                 </div>
               </div>
-              <form action="#">
+              <form action="/review" method="POST">
                 <h4 class="mb-5 fw-bold">Leave a Reply</h4>
                 <div class="row g-4">
                   <div class="col-lg-6">
@@ -373,6 +372,7 @@
                         type="text"
                         class="form-control border-0 me-4"
                         placeholder="Yur Name *"
+                        name="userName"
                       />
                     </div>
                   </div>
@@ -382,13 +382,14 @@
                         type="email"
                         class="form-control border-0"
                         placeholder="Your Email *"
+                        name="userEmail"
                       />
                     </div>
                   </div>
                   <div class="col-lg-12">
                     <div class="border-bottom rounded my-4">
                       <textarea
-                        name=""
+                        name="details"
                         id=""
                         class="form-control border-0"
                         cols="30"
@@ -413,12 +414,12 @@
                           <i class="fa fa-star"></i>
                         </div>
                       </div>
-                      <a
-                        href="#"
+                      <button
+                        type="submit"
                         class="btn border border-secondary text-primary rounded-pill px-4 py-3"
                       >
-                        Post Comment</a
-                      >
+                        Post Comment
+                      </button>
                     </div>
                   </div>
                 </div>

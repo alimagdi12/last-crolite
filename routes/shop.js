@@ -49,4 +49,6 @@ router.post("/cart-decrease-quantity", isAuth, shopController.postDecreaseCart);
 
 router.post("/new-search", shopController.postNewSearch);
 
+router.post("/review", shopController.postReview);
+
 module.exports = router;

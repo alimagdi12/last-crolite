@@ -2,6 +2,7 @@ const Product = require("../models/product");
 const Order = require("../models/order");
 const User = require("../models/user");
 const Stripe = require("stripe");
+const Review = require("../models/reviews");
 const user = require("../models/user");
 const stripe = Stripe(
   "sk_test_51OmeLSKnxvTYYIlSbsJaeNY5XyiliPJfGg6vA9JQev5T442TXqnEBg2OdZcFZx4Gs5EKVbA7lQ0GO4RyAiM0qbvj005mnOklV9"
@@ -1003,4 +1004,22 @@ const performSearch = async ({ searchInput, color, category }) => {
   }
 
   return await Product.find(query);
+};
+
+exports.postReview = (req, res) => {
+  try {
+    const userName = req.body.userName;
+    const email = req.body.userEmail;
+    const review = req.body.details;
+    const rating = req.body.rating;
+    const newReview = new Review({
+      name: userName,
+      email,
+      details: review,
+    });
+    newReview.save();
+    res.redirect(`/products`);
+  } catch (err) {
+    console.error(err.message);
+  }
 };
