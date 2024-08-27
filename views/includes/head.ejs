@@ -100,6 +100,32 @@
       .star-rating input[type="radio"]:checked ~ label {
         color: #7d5939;
       }
+      body,
+      html {
+        overflow-x: hidden;
+      }
+
+      .navbar-collapse {
+        overflow-x: hidden;
+      }
+      .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+      }
+      .navbar {
+        max-width: 100%;
+      }
+      .navbar-toggler {
+        position: relative;
+        z-index: 10;
+        right: 0;
+        left: 0;
+      }
+      @media (max-width: 1200px) {
+        #nav-icons {
+          display: flex !important;
+        }
+      }
     </style>
   </head>
 </html>
